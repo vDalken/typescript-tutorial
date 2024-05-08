@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
-import { books } from '../data/data'
-import { Book } from '../data/data'
+import { books } from '../utils/data/Data'
+import { Book } from '../utils/data/Data'
 import { validationResult, checkSchema, matchedData } from 'express-validator'
 
 export const bookController = {
