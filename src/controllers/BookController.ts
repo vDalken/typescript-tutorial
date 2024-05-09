@@ -1,17 +1,15 @@
 import { Request, Response } from 'express'
-import { books } from '../utils/data/Data'
-import { Book } from '../utils/data/Data'
-import { validationResult, checkSchema, matchedData } from 'express-validator'
+import { Book } from '../models/Book'
+import { validationResult, matchedData } from 'express-validator'
+import { bookRepository } from '..'
 
 export const bookController = {
-  getAllBooks: (request: Request, response: Response) => {
-    if (books.length === 0) {
-      return response.status(404).send({ msg: 'No books posted yet' })
-    }
+  getAllBooks: async (request: Request, response: Response) => {
+    const books = await bookRepository.find()
     return response.send(books)
   },
 
-  createBook: (request: Request, response: Response) => {
+  createBook: async (request: Request, response: Response) => {
     const result = validationResult(request)
 
     if (!result.isEmpty())
@@ -19,33 +17,35 @@ export const bookController = {
 
     const { title, author, pages } = matchedData(request)
 
-    const book: Book = {
-      id: books.length,
-      title: title,
-      author: author,
-      pages: pages
-    }
+    const book = new Book()
+    book.title = title
+    book.author = author
+    book.pages = pages
 
-    books.push(book)
+    const savedBook = await bookRepository.save(book)
 
-    return response.status(200).send(book)
+    return response.status(200).send(savedBook)
   },
 
-  getSpecificBook: (request: Request, response: Response) => {
+  getSpecificBook: async (request: Request, response: Response) => {
     const {
       params: { id }
     } = request
 
-    const book = books.find((book) => book.id === parseInt(id))
+    const book = await bookRepository.findOne({
+      where: {
+        id: parseInt(id)
+      }
+    })
 
     if (!book) {
-      response.status(404).send({ msg: 'No book with that id found' })
+      return response.status(404).send({ msg: 'No book with that id found' })
     }
 
     return response.status(200).send(book)
   },
 
-  updateBook: (request: Request, response: Response) => {
+  updateBook: async (request: Request, response: Response) => {
     const result = validationResult(request)
 
     if (!result.isEmpty()) {
@@ -53,43 +53,46 @@ export const bookController = {
     }
 
     const { title, author, pages } = matchedData(request)
+    const bookId: number = parseInt(request.params.id)
 
-    const bookIndex = books.findIndex(
-      (book) => book.id === parseInt(request.params.id)
-    )
-    console.log(bookIndex)
+    const book = await bookRepository.findOne({ where: { id: bookId } })
 
-    if (bookIndex === -1) {
+    if (!book) {
       return response
         .status(400)
         .send({ msg: 'There is no such book with that id' })
     }
 
-    const newBook = {
-      id: bookIndex,
-      title: title,
-      author: author,
-      pages: pages
-    }
+    book.title = title
+    book.author = author
+    book.pages = pages
 
-    books[bookIndex] = newBook
+    const savedBook = await bookRepository.save(book)
 
-    return response.status(200).send(newBook)
+    return response.status(200).send(savedBook)
   },
 
-  deleteBook: (request: Request, response: Response) => {
+  deleteBook: async (request: Request, response: Response) => {
     const {
       params: { id }
     } = request
-  
-    const bookIndex = books.findIndex((book) => book.id === parseInt(id))
-  
-    if (bookIndex === -1) {
-      return response.status(400).send({ msg: 'No book with that id was found' })
+
+    const bookId : number = parseInt(id)
+
+    const book = await bookRepository.findOne({
+      where:{
+        id:bookId
+      }
+    })
+
+    if (!book) {
+      return response
+        .status(400)
+        .send({ msg: 'No book with that id was found' })
     }
-  
-    books.splice(bookIndex, 1)
-  
+
+    await bookRepository.delete(bookId);
+
     return response.sendStatus(204)
   }
 }

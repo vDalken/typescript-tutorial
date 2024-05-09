@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { createBookSchema } from '../utils/validation_schemas/CreateBookSchema'
+import { createBookSchema } from '../utils/validation-schemas/CreateBookSchema'
 import { checkSchema } from 'express-validator'
 import { bookController } from '../controllers/BookController'
 
